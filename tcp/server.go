@@ -10,6 +10,7 @@ import (
 
 var mutex sync.Mutex
 var nr_connections int = 0
+
 var nr_concurrencies int = 0
 var nr_base int = 0
 var beg0 = time.Now()
@@ -41,12 +42,18 @@ func main() {
 			fmt.Println("FAILED: " + err.Error())
 			fmt.Println(nr_connections)
 		} else {
-			go handleConnection(conn)
+			// go passiveClose(conn)
+			activeClose(conn)
 		}
 	}
 }
 
-func handleConnection(c net.Conn) {
+func activeClose(c net.Conn) {
+	nr_connections++
+	c.Close()
+}
+
+func passiveClose(c net.Conn) {
 	mutex.Lock()
 	nr_connections++
 	nr_concurrencies++

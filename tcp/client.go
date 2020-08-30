@@ -2,11 +2,16 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
+	"os"
+	"sync"
 	"time"
 )
 
+var mutex sync.Mutex
 var nr_connections = 0
+var nr_concurrencies int = 0
 var wait_ns int64 = 0
 var beg = time.Now()
 
@@ -22,18 +27,59 @@ func measure() {
 }
 
 func main() {
+	target := "localhost:8080"
+	if len(os.Args) > 1 {
+		target = os.Args[1]
+	}
+
 	go measure()
+
+	set := make(map[string]struct{})
 
 	for {
 		// b := time.Now()
-		conn, err := net.DialTimeout("tcp", "localhost:8080", 2000*time.Millisecond)
+		conn, err := net.DialTimeout("tcp", target, 2000*time.Millisecond)
 		// wait_ns += time.Now().Sub(b).Nanoseconds()
 
 		if err != nil {
 			fmt.Println("FAILED: " + err.Error())
 			continue
 		}
+
+		t := conn.LocalAddr().String()
+		if _, ok := set[t]; ok {
+			fmt.Printf("reused %s\n", t)
+		} else {
+			set[t] = struct{}{}
+		}
 		nr_connections++
-		conn.Close()
+		// activeClose(conn)
+		go passiveClose(conn)
 	}
+}
+
+func activeClose(c net.Conn) {
+	c.Close()
+}
+
+func passiveClose(c net.Conn) {
+	mutex.Lock()
+	nr_concurrencies++
+	mutex.Unlock()
+
+	var buf = make([]byte, 10)
+	for {
+		_, error := c.Read(buf)
+		if error != nil {
+			if error == io.EOF {
+				break
+			} else {
+				panic(error)
+			}
+		}
+	}
+	c.Close()
+	mutex.Lock()
+	nr_concurrencies--
+	mutex.Unlock()
 }
