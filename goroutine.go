@@ -1,13 +1,7 @@
 //
-// goroutineがGCの対象外というような話がWeb上にあったため、その事実確認のためのプログラム。
+// 大量goroutine生成テスト
 //
-// このプログラムは、無限にgoroutineを生成する。
-// 実行したところ、メモリ使用率は一定である。
-//
-// したがって、goroutineのメモリはしっかり再利用されている。
-//
-// 104,138,175個のgoroutienを生成して、RSSは2,440、VSZは4,371,412。
-//
+
 package main
 
 import (
@@ -24,7 +18,7 @@ func generateGoroutines(c chan int) {
 		var mu sync.Mutex
 
 		for {
-			// Goroutineの終了を待つ。
+			// goroutineの終了を待つ。
 			for runtime.NumGoroutine() > 2 {
 				runtime.Gosched()
 			}
