@@ -1,0 +1,4 @@
+
+sysctl -w /proc/sys/net/ipv4/tcp_fastopen=0
+sysctl -w /proc/sys/net/ipv4/tcp_tw_reuse=0
+sysctl -w /proc/sys/net/ipv4/tcp_timestamps=0

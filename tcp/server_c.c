@@ -19,7 +19,8 @@ void *measure(void *arg)
 		time_t now = 0;
 		sleep(5);
 		now = time(NULL);
-		fprintf(stdout, "%5d/s, %5d/s\n",
+		fprintf(stdout, "%10d  %5d/s, %5d/s\n",
+				nr_connections,
 				(int)(nr_connections / (now - beg0)),
 				(int)((nr_connections - nr_base) / (now - beg_base)));
 		time(&beg_base);
