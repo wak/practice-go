@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <memory.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -7,19 +8,28 @@
 #include <netinet/in.h>
 #include <time.h>
 
+static char *target_ip_address = "127.0.0.1";
+
 void passive_close(int sock)
 {
 	char buf[10];
 	int ret;
+	int count = 0;
 	
 	while ((ret = read(sock, buf, sizeof(buf))) != 0)
 	{
 		if (ret < 0) {
-			perror("read failed");
+			perror("read()");
 			break;
 		}
+		count += ret;
 	}
-	close(sock);
+	if (close(sock) < 0) {
+		perror("close()");
+		exit(1);
+	}
+
+	printf("%d bytes read.\n", count);
 }
 
 int do_connect(void)
@@ -33,7 +43,7 @@ int do_connect(void)
 	
 	sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (sock < 0) {
-		perror("socket");
+		perror("socket()");
 		return 1;
 	}
 
@@ -41,29 +51,42 @@ int do_connect(void)
 	client.sin_port = htons(10010);
 	client.sin_addr.s_addr = INADDR_ANY;
 	if (bind(sock, (struct sockaddr *)&client, sizeof(client))) {
-		perror("bind");
+		perror("bind()");
+		close(sock);
 		return 1;
 	}
-	
-	if (inet_aton("127.0.0.1", &addr.sin_addr) == 0) {
+
+	printf("target: %s\n", target_ip_address);
+	if (inet_aton(target_ip_address, &addr.sin_addr) == 0) {
 		fprintf(stderr, "inet_aton() failed.\n");
+		close(sock);
 		return 1;
 	}
+
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(8080);
-	addr.sin_addr.s_addr = INADDR_ANY;
+	/* addr.sin_addr.s_addr = INADDR_ANY; */
 	if (connect(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-		perror("connect");
+		perror("connect()");
+		close(sock);
 		return 1;
 	}
-	
+
 	passive_close(sock);
 	return 0;
 }
 
 int main(int argc, char **argv)
 {
-	do_connect();
+	int i;
+
+	if (argc > 1)
+		target_ip_address = argv[1];
+
+	for (i = 0; i < 100; i++) {
+		do_connect();
+		sleep(0.5);
+	}
 
 	return 0;
 }
