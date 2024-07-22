@@ -71,6 +71,24 @@ int do_connect(int count)
 		return 1;
 	}
 
+	if (1) {
+		struct linger lin;
+		lin.l_onoff = 1;
+        lin.l_linger = 5;
+	    if (setsockopt(sock, SOL_SOCKET, SO_LINGER, &lin, sizeof(lin)) < 0) {
+			perror("setsockopt(SO_LINGER) failed");
+			return 1;
+		}
+	}
+
+	if (1) {
+		int reuseaddr = 1;
+		if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const void *) &reuseaddr, sizeof(int)) < 0) {
+			perror("setsockopt failed");
+			return 1;
+		}
+	}
+
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(8080);
 	if (connect(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
@@ -88,8 +106,9 @@ int do_connect(int count)
 		return 1;
 	}
 	
-	printf("[%6d] :%-5d -> %s:8080\n", count, ntohs(addr2.sin_port), target_ip_address);
+	// printf("[%6d] :%-5d -> %s:8080\n", count, ntohs(addr2.sin_port), target_ip_address);
 	active_close(sock);
+	//passive_close(sock);
 	return 0;
 }
 
