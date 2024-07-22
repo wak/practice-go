@@ -10,6 +10,9 @@
 
 static char *target_ip_address = "127.0.0.1";
 
+static int set_linger = 1;
+static int set_reuseaddr = 0;
+
 #define BINDPORT 0
 
 void passive_close(int sock)
@@ -36,7 +39,10 @@ void passive_close(int sock)
 
 void active_close(int sock)
 {
-	close(sock);
+	if (close(sock) < 0) {
+		perror("close()");
+		exit(1);
+	}
 }
 
 int do_connect(int count)
@@ -71,17 +77,17 @@ int do_connect(int count)
 		return 1;
 	}
 
-	if (1) {
+	if (set_linger) {
 		struct linger lin;
 		lin.l_onoff = 1;
-        lin.l_linger = 5;
+        lin.l_linger = 1;
 	    if (setsockopt(sock, SOL_SOCKET, SO_LINGER, &lin, sizeof(lin)) < 0) {
 			perror("setsockopt(SO_LINGER) failed");
 			return 1;
 		}
 	}
 
-	if (1) {
+	if (set_reuseaddr) {
 		int reuseaddr = 1;
 		if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const void *) &reuseaddr, sizeof(int)) < 0) {
 			perror("setsockopt failed");
@@ -118,6 +124,13 @@ int main(int argc, char **argv)
 
 	if (argc > 1)
 		target_ip_address = argv[1];
+
+	if (set_linger) {
+		printf("SET REUSEADDR\n");
+	}
+	if (set_reuseaddr) {
+		printf("SET LINGER\n");
+	}
 
 	for (i = 0; i < 10000000; i++) {
 		do_connect(i);
